@@ -1,0 +1,2 @@
+# CloseRestartGamePlugin
+Wii U plugin
