@@ -11,30 +11,27 @@
 WUPS_USE_STORAGE("CloseRestartGamePlugin");
 
 const uint64_t TITLE_ID_BLACKLIST[] = {0x0005001010045000, // System Updater JPN
-                                    0x0005001010045100, // System Updater USA
-                                    0x0005001010045200, // System Updater EUR
-                                    0x0005001010047000, // System Settings JPN
-                                    0x0005001010047100, // System Settings USA
-                                    0x0005001010047200, // System Settings EUR
-                                    0x0005001010049000, // User Settings JPN
-                                    0x0005001010049100, // User Settings USA
-                                    0x0005001010049200, // User Settings EUR
-                                    0x000500101004A000, // Mii Maker JPN
-                                    0x000500101004A100, // Mii Maker USA
-                                    0x000500101004A200, // Mii Maker EUR
-                                    0x000500101004B000, // Account Settings JPN
-                                    0x000500101004B100, // Account Settings USA
-                                    0x000500101004B200, // Account Settings EUR
-                                    0x0005001010062000, // Software Data Transfer JPN
-                                    0x0005001010062100, // Software Data Transfer USA
-                                    0x0005001010062200, // Software Data Transfer EUR
-                                    0x0005001010040000, // Wii U Menu JPN
-                                    0x0005001010040100, // Wii U Menu USA
-                                    0x0005001010040200, // Wii U Menu EUR
-                                    0x000500101004E000, // Health and Safety JPN
-                                    0x000500101004E100, // Health and Safety USA
-                                    0x000500101004E200  // Health and Safety EUR
-                                    };
+                                       0x0005001010045100, // System Updater USA
+                                       0x0005001010045200, // System Updater EUR
+                                       0x0005001010047000, // System Settings JPN
+                                       0x0005001010047100, // System Settings USA
+                                       0x0005001010047200, // System Settings EUR
+                                       0x0005001010049000, // User Settings JPN
+                                       0x0005001010049100, // User Settings USA
+                                       0x0005001010049200, // User Settings EUR
+                                       0x000500101004A000, // Mii Maker JPN
+                                       0x000500101004A100, // Mii Maker USA
+                                       0x000500101004A200, // Mii Maker EUR
+                                       0x000500101004B000, // Account Settings JPN
+                                       0x000500101004B100, // Account Settings USA
+                                       0x000500101004B200, // Account Settings EUR
+                                       0x0005001010062000, // Software Data Transfer JPN
+                                       0x0005001010062100, // Software Data Transfer USA
+                                       0x0005001010062200, // Software Data Transfer EUR
+                                       0x0005001010040000, // Wii U Menu JPN
+                                       0x0005001010040100, // Wii U Menu USA
+                                       0x0005001010040200  // Wii U Menu EUR
+                                       };
 
 static bool sCloseNow = false;
 static bool sRestartNow = false;
