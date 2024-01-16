@@ -19,7 +19,7 @@ WUPS_PLUGIN_LICENSE("GPLv3");
 
 WUPS_USE_WUT_DEVOPTAB();
 
-// Called when exiting the plugin loader
+// Gets called ONCE when the plugin was loaded
 INITIALIZE_PLUGIN()
 {
     initConfig();
