@@ -142,14 +142,14 @@ WUPS_CONFIG_CLOSED()
     WUPS_CloseStorage();
 
     if (sCloseNow) {
-        sCloseNow = false;
         SYSLaunchMenu();
     } else if (sRestartNow) {
-        sRestartNow = false;
         SYSRelaunchTitle(0, 0);
     } else if (sSwitchUsers) {
-        sSwitchUsers = false;
         nn::act::SlotNo slot = nn::act::GetSlotNo();
         _SYSLaunchMenuWithCheckingAccount(slot);
     }
+    sCloseNow = false;
+    sRestartNow = false;
+    sSwitchUsers = false;
 }

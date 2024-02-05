@@ -21,14 +21,13 @@ bool WUPSConfigItemCheckbox_callCallback(void *context) {
 
 void WUPSConfigItemCheckbox_onButtonPressed(void *context, WUPSConfigButtons buttons) {
     auto *item = (ConfigItemCheckbox *) context;
-    if ((buttons & WUPS_CONFIG_BUTTON_A) || (buttons & WUPS_CONFIG_BUTTON_LEFT) || (buttons & WUPS_CONFIG_BUTTON_RIGHT)) {
+    if (buttons & WUPS_CONFIG_BUTTON_A) {
         item->value = !item->value;
     }
 }
 
 bool WUPSConfigItemCheckbox_isMovementAllowed(void *context) {
-    auto *item = (ConfigItemCheckbox *) context;
-    return !item->value;
+    return true;
 }
 
 int32_t WUPSConfigItemCheckbox_getCurrentValueSelectedDisplay(void *context, char *out_buf, int32_t out_size) {
