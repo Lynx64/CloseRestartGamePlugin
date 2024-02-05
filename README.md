@@ -1,7 +1,7 @@
 # Close/Restart Game Plugin
-Restart or close a game from the plugin config menu, even while the HOME Menu is inaccessible (you may not notice this at first as the options aren't shown in the Wii U Menu (and some other places)).
+Restart or close a game from the plugin config menu, even while the HOME Button Menu is inaccessible (you may not notice this at first as the options aren't shown in the Wii U Menu).
 
-Also adds a button shortcut to close or restart to the HOME Menu.
+Also adds a button shortcut to close or restart to the HOME Button Menu.
 
 ## Installation
 Download the latest release from the [Releases page](https://github.com/Lynx64/CloseRestartGamePlugin/releases)<br/>
