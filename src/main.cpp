@@ -27,6 +27,8 @@ INITIALIZE_PLUGIN()
 
 extern "C" uint32_t VPADGetButtonProcMode(VPADChan chan);
 
+#define HBM_HOLD_TO_RESTART_FRAMES 45
+
 static OSDynLoad_Module sysappModule                                 = nullptr;
 static void (*dyn_SYSLaunchMenu)()                                   = nullptr;
 static void (*dyn__SYSLaunchTitleDirect)(uint64_t titleId)           = nullptr;
@@ -85,13 +87,13 @@ DECL_FUNCTION(int32_t, VPADRead, VPADChan chan, VPADStatus *buffer, uint32_t buf
             }
         }
         if (foundX) {
-            if (sHeldXForFramesGamePad == 60 && gHoldToRestart && OSIsHomeButtonMenuEnabled()) {
+            if (sHeldXForFramesGamePad == HBM_HOLD_TO_RESTART_FRAMES && gHoldToRestart && OSIsHomeButtonMenuEnabled()) {
                 OSEnableHomeButtonMenu(FALSE);
                 restartGameFromHBM();
             }
             sHeldXForFramesGamePad++;
         } else if (sHeldXForFramesGamePad > 0) {
-            if (sHeldXForFramesGamePad <= 60 && gPressToClose && OSIsHomeButtonMenuEnabled()) {
+            if (sHeldXForFramesGamePad <= HBM_HOLD_TO_RESTART_FRAMES && gPressToClose && OSIsHomeButtonMenuEnabled()) {
                 OSEnableHomeButtonMenu(FALSE);
                 closeGameFromHBM();
             }
@@ -111,14 +113,15 @@ DECL_FUNCTION(int32_t, KPADReadEx, KPADChan chan, KPADStatus *data, uint32_t siz
     if (result > 0 && realError == KPAD_ERROR_OK && 
         chan >= 0 && chan < 4 && 
         (data[0].extensionType == WPAD_EXT_CLASSIC || data[0].extensionType == WPAD_EXT_PRO_CONTROLLER)) {
+        
         if (data[0].classic.hold & WPAD_CLASSIC_BUTTON_X) {
-            if (sHeldXForFramesKPAD[chan] == 60 && gHoldToRestart && OSIsHomeButtonMenuEnabled()) {
+            if (sHeldXForFramesKPAD[chan] == HBM_HOLD_TO_RESTART_FRAMES && gHoldToRestart && OSIsHomeButtonMenuEnabled()) {
                 OSEnableHomeButtonMenu(FALSE);
                 restartGameFromHBM();
             }
             sHeldXForFramesKPAD[chan]++;
         } else if (sHeldXForFramesKPAD[chan] > 0) {
-            if (sHeldXForFramesKPAD[chan] <= 60 && gPressToClose && OSIsHomeButtonMenuEnabled()) {
+            if (sHeldXForFramesKPAD[chan] <= HBM_HOLD_TO_RESTART_FRAMES && gPressToClose && OSIsHomeButtonMenuEnabled()) {
                 OSEnableHomeButtonMenu(FALSE);
                 closeGameFromHBM();
             }
