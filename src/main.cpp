@@ -71,13 +71,10 @@ DECL_FUNCTION(int32_t, VPADRead, VPADChan chan, VPADStatus *buffer, uint32_t buf
 {
     VPADReadError realError = VPAD_READ_UNINITIALIZED;
     int32_t result = real_VPADRead(chan, buffer, bufferSize, &realError);
-    uint32_t end = 1;
-    if (VPADGetButtonProcMode(chan) == 1) {
-        end = bufferSize;
-    }
 
     if (result > 0 && realError == VPAD_READ_SUCCESS) {
         bool foundX = false;
+        uint32_t end = (VPADGetButtonProcMode(chan) == 1) ? bufferSize : 1;
         for (uint32_t i = 0; i < end; i++) {
             if (buffer[i].hold & VPAD_BUTTON_X) {
                 foundX = true;
