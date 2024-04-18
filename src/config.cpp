@@ -1,5 +1,6 @@
 #include "config.h"
 #include "globals.hpp"
+#include "logger.h"
 #include "config/WUPSConfigItemCheckbox.h"
 #include <wups.h>
 #include <wups/config/WUPSConfigItemBoolean.h>
@@ -116,6 +117,7 @@ WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle ro
 
         root.add(std::move(homeMenuSettings));
     } catch (const std::exception &e) {
+        DEBUG_FUNCTION_LINE_ERR("Exception: %s", e.what());
         return WUPSCONFIG_API_CALLBACK_RESULT_ERROR;
     }
     return WUPSCONFIG_API_CALLBACK_RESULT_SUCCESS;
