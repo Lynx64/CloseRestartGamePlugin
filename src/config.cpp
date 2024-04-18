@@ -1,5 +1,6 @@
 #include "config.h"
 #include "globals.hpp"
+#include "logger.h"
 #include "config/WUPSConfigItemCheckbox.h"
 #include <wups.h>
 #include <wups/config/WUPSConfigItemBoolean.h>
@@ -37,37 +38,14 @@ static bool sCloseNow = false;
 static bool sRestartNow = false;
 static bool sSwitchUsers = false;
 
-void initConfig()
-{
-    // Open storage to read values
-    if (WUPS_OpenStorage() != WUPS_STORAGE_ERROR_SUCCESS) {
-        //failed to open storage - use default values
-    } else {
-        // Try to get value from storage
-        if (WUPS_GetBool(nullptr, "gPressToClose", &gPressToClose) != WUPS_STORAGE_ERROR_SUCCESS) {
-            // Add the value to the storage if it's missing
-            gPressToClose = false;
-            WUPS_StoreBool(nullptr, "gPressToClose", gPressToClose);
-        }
-
-        if (WUPS_GetBool(nullptr, "gHoldToRestart", &gHoldToRestart) != WUPS_STORAGE_ERROR_SUCCESS) {
-            gHoldToRestart = true;
-            WUPS_StoreBool(nullptr, "gHoldToRestart", gHoldToRestart);
-        }
-
-        // Close storage
-        WUPS_CloseStorage();
-    }
-}
-
 void checkboxItemChanged(ConfigItemCheckbox *item, bool newValue)
 {
-    if (item && item->configId) {
-        if (std::string_view(item->configId) == "sCloseNow") {
+    if (item && item->identifier) {
+        if (std::string_view("sCloseNow") == item->identifier) {
             sCloseNow = newValue;
-        } else if (std::string_view(item->configId) == "sRestartNow") {
+        } else if (std::string_view("sRestartNow") == item->identifier) {
             sRestartNow = newValue;
-        } else if (std::string_view(item->configId) == "sSwitchUsers") {
+        } else if (std::string_view("sSwitchUsers") == item->identifier) {
             sSwitchUsers = newValue;
         }
     }
@@ -75,71 +53,80 @@ void checkboxItemChanged(ConfigItemCheckbox *item, bool newValue)
 
 void boolItemCallback(ConfigItemBoolean *item, bool newValue)
 {
-    if (item && item->configId) {
-        if (std::string_view(item->configId) == "gPressToClose") {
+    if (item && item->identifier) {
+        if (std::string_view(PRESS_TO_CLOSE_CONFIG_ID) == item->identifier) {
             gPressToClose = newValue;
-            WUPS_StoreBool(nullptr, item->configId, gPressToClose);
-        } else if (std::string_view(item->configId) == "gHoldToRestart") {
+            WUPSStorageAPI::Store(item->identifier, gPressToClose);
+        } else if (std::string_view(HOLD_TO_RESTART_CONFIG_ID) == item->identifier) {
             gHoldToRestart = newValue;
-            WUPS_StoreBool(nullptr, item->configId, gHoldToRestart);
+            WUPSStorageAPI::Store(item->identifier, gHoldToRestart);
         }
     }
 }
 
-WUPS_GET_CONFIG()
+WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle rootHandle)
 {
-    WUPSConfigHandle config;
-    WUPSConfig_CreateHandled(&config, "Close/Restart Game");
+    try {
+        WUPSConfigCategory root = WUPSConfigCategory(rootHandle);
 
-    // Open the storage
-    WUPSStorageError storageRes = WUPS_OpenStorage();
-    if (storageRes != WUPS_STORAGE_ERROR_SUCCESS) {
-        //failed to open storage
-        WUPSConfigCategoryHandle errorInfo1;
-        WUPSConfig_AddCategoryByNameHandled(config, "Error opening storage", &errorInfo1);
-
-        WUPSConfigCategoryHandle errorInfo2;
-        WUPSConfig_AddCategoryByNameHandled(config, "Try deleting plugins/config/CloseRestartGamePlugin.json", &errorInfo2);
-        return config;
-    }
-
-    //check that current title is not in blacklist
-    bool validTitle = true;
-    uint64_t titleId = OSGetTitleID();
-    for (auto &blackId : TITLE_ID_BLACKLIST) {
-        if (titleId == blackId) {
-            validTitle = false;
-            break;
+        //check that current title is not in blacklist
+        bool validTitle = true;
+        uint64_t titleId = OSGetTitleID();
+        for (auto &blackId : TITLE_ID_BLACKLIST) {
+            if (titleId == blackId) {
+                validTitle = false;
+                break;
+            }
         }
+
+        // Category: Root
+        if (validTitle) {
+            root.add(WUPSConfigItemCheckbox::Create("sRestartNow",
+                                                    "Restart \ue08e",
+                                                    false,
+                                                    sRestartNow,
+                                                    &checkboxItemChanged));
+
+            root.add(WUPSConfigItemCheckbox::Create("sCloseNow",
+                                                    "Close \ue098",
+                                                    false,
+                                                    sCloseNow,
+                                                    &checkboxItemChanged));
+
+            root.add(WUPSConfigItemCheckbox::Create("sSwitchUsers",
+                                                    "Close and switch users \ue098",
+                                                    false,
+                                                    sSwitchUsers,
+                                                    &checkboxItemChanged));
+        }
+        
+        // Category: HOME Menu settings
+        auto homeMenuSettings = WUPSConfigCategory::Create("\ue073 Menu settings");
+
+        homeMenuSettings.add(WUPSConfigItemBoolean::Create(PRESS_TO_CLOSE_CONFIG_ID,
+                                                           "Press \ue002 to close",
+                                                           DEFAULT_PRESS_TO_CLOSE_VALUE,
+                                                           gPressToClose,
+                                                           &boolItemCallback));
+
+        homeMenuSettings.add(WUPSConfigItemBoolean::Create(HOLD_TO_RESTART_CONFIG_ID,
+                                                           "Hold \ue002 to restart",
+                                                           DEFAULT_HOLD_TO_RESTART_VALUE,
+                                                           gHoldToRestart,
+                                                           &boolItemCallback));
+
+        root.add(std::move(homeMenuSettings));
+    } catch (const std::exception &e) {
+        DEBUG_FUNCTION_LINE_ERR("Exception: %s", e.what());
+        return WUPSCONFIG_API_CALLBACK_RESULT_ERROR;
     }
-
-    if (validTitle) {
-        // Category: Game
-        WUPSConfigCategoryHandle gameOptions;
-        WUPSConfig_AddCategoryByNameHandled(config, "Game", &gameOptions);
-
-        WUPSConfigItemCheckbox_AddToCategoryHandled(config, gameOptions, "sRestartNow", "Restart \ue08e", sRestartNow, &checkboxItemChanged);
-
-        WUPSConfigItemCheckbox_AddToCategoryHandled(config, gameOptions, "sCloseNow", "Close \ue098", sCloseNow, &checkboxItemChanged);
-
-        WUPSConfigItemCheckbox_AddToCategoryHandled(config, gameOptions, "sSwitchUsers", "Close and switch users \ue098", sSwitchUsers, &checkboxItemChanged);
-    }
-
-    // Category: HOME Menu settings
-    WUPSConfigCategoryHandle homeMenuSettings;
-    WUPSConfig_AddCategoryByNameHandled(config, "\ue073 Menu settings", &homeMenuSettings);
-
-    WUPSConfigItemBoolean_AddToCategoryHandled(config, homeMenuSettings, "gPressToClose", "Press \ue002 to close", gPressToClose, &boolItemCallback);
-
-    WUPSConfigItemBoolean_AddToCategoryHandled(config, homeMenuSettings, "gHoldToRestart", "Hold \ue002 to restart", gHoldToRestart, &boolItemCallback);
-
-    return config;
+    return WUPSCONFIG_API_CALLBACK_RESULT_SUCCESS;
 }
 
-WUPS_CONFIG_CLOSED()
+void ConfigMenuClosedCallback()
 {
     // Save all changes
-    WUPS_CloseStorage();
+    WUPSStorageAPI::SaveStorage();
 
     if (sCloseNow) {
         SYSLaunchMenu();
@@ -152,4 +139,14 @@ WUPS_CONFIG_CLOSED()
     sCloseNow = false;
     sRestartNow = false;
     sSwitchUsers = false;
+}
+
+void initConfig()
+{
+    WUPSConfigAPIOptionsV1 configOptions = {.name = "Close/Restart Game"};
+    WUPSConfigAPI_Init(configOptions, ConfigMenuOpenedCallback, ConfigMenuClosedCallback);
+    
+    WUPSStorageAPI::GetOrStoreDefault(PRESS_TO_CLOSE_CONFIG_ID, gPressToClose, DEFAULT_PRESS_TO_CLOSE_VALUE);
+
+    WUPSStorageAPI::GetOrStoreDefault(HOLD_TO_RESTART_CONFIG_ID, gHoldToRestart, DEFAULT_HOLD_TO_RESTART_VALUE);
 }

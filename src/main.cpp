@@ -19,7 +19,7 @@ WUPS_PLUGIN_LICENSE("GPLv3");
 
 WUPS_USE_WUT_DEVOPTAB();
 
-// Called when exiting the plugin loader
+// Gets called ONCE when the plugin was loaded
 INITIALIZE_PLUGIN()
 {
     initConfig();
@@ -75,13 +75,10 @@ DECL_FUNCTION(int32_t, VPADRead, VPADChan chan, VPADStatus *buffer, uint32_t buf
 {
     VPADReadError realError = VPAD_READ_UNINITIALIZED;
     int32_t result = real_VPADRead(chan, buffer, bufferSize, &realError);
-    uint32_t end = 1;
-    if (VPADGetButtonProcMode(chan) == 1) {
-        end = bufferSize;
-    }
 
     if (result > 0 && realError == VPAD_READ_SUCCESS) {
         bool foundX = false;
+        uint32_t end = (VPADGetButtonProcMode(chan) == 1) ? bufferSize : 1;
         for (uint32_t i = 0; i < end; i++) {
             if (buffer[i].hold & VPAD_BUTTON_X) {
                 foundX = true;
@@ -133,4 +130,4 @@ DECL_FUNCTION(int32_t, KPADReadEx, KPADChan chan, KPADStatus *data, uint32_t siz
 }
 
 WUPS_MUST_REPLACE_FOR_PROCESS(VPADRead, WUPS_LOADER_LIBRARY_VPAD, VPADRead, WUPS_FP_TARGET_PROCESS_HOME_MENU);
-WUPS_MUST_REPLACE_PHYSICAL_FOR_PROCESS(KPADReadEx, 0x2e4507F4, 0x0e4507F4, WUPS_FP_TARGET_PROCESS_HOME_MENU);
+WUPS_MUST_REPLACE_PHYSICAL_FOR_PROCESS(KPADReadEx, 0x2E4507F4, 0x0E4507F4, WUPS_FP_TARGET_PROCESS_HOME_MENU);
