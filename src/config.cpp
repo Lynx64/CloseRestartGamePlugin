@@ -13,6 +13,7 @@ WUPS_USE_STORAGE("CloseRestartGamePlugin");
 
 extern "C" void _SYSLaunchMenuFromHBM(void);
 extern "C" void _SYSLaunchMenuWithCheckingAccountFromHBM(uint8_t slot);
+extern "C" void SYSLaunchSettings(SysAppSettingsArgs *args);
 
 const uint64_t TITLE_ID_BLACKLIST[] = {0x0005001010045000, // System Updater JPN
                                        0x0005001010045100, // System Updater USA
@@ -40,6 +41,9 @@ const uint64_t TITLE_ID_BLACKLIST[] = {0x0005001010045000, // System Updater JPN
 static bool sCloseNow = false;
 static bool sRestartNow = false;
 static bool sSwitchUsers = false;
+static bool sManageData = false;
+
+static bool sStubNextRelaunch = false;
 
 void checkboxItemChanged(ConfigItemCheckbox *item, bool newValue)
 {
@@ -50,6 +54,8 @@ void checkboxItemChanged(ConfigItemCheckbox *item, bool newValue)
             sRestartNow = newValue;
         } else if (std::string_view("sSwitchUsers") == item->identifier) {
             sSwitchUsers = newValue;
+        } else if (std::string_view("sManageData") == item->identifier) {
+            sManageData = newValue;
         }
     }
 }
@@ -103,6 +109,12 @@ WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle ro
                                                     "Close and switch users \ue098",
                                                     false,
                                                     sSwitchUsers,
+                                                    &checkboxItemChanged));
+
+            root.add(WUPSConfigItemCheckbox::Create("sManageData",
+                                                    "Close and manage save data \uE098",
+                                                    false,
+                                                    sManageData,
                                                     &checkboxItemChanged));
         }
         
@@ -165,10 +177,15 @@ void ConfigMenuClosedCallback()
         } else {
             _SYSLaunchMenuWithCheckingAccount(nn::act::GetSlotNo());
         }
+    } else if (sManageData) {
+        sStubNextRelaunch = true;
+        SysAppSettingsArgs settingsArgs {0, 0, 2, 0}; // 2 = Data Management
+        SYSLaunchSettings(&settingsArgs);
     }
     sCloseNow = false;
     sRestartNow = false;
     sSwitchUsers = false;
+    sManageData = false;
 }
 
 void initConfig()
@@ -182,3 +199,14 @@ void initConfig()
 
     WUPSStorageAPI::GetOrStoreDefault(LAUNCH_MENU_DIRECT_CONFIG_ID, gLaunchMenuDirect, DEFAULT_LAUNCH_MENU_DIRECT_VALUE);
 }
+
+DECL_FUNCTION(void, OSForceFullRelaunch)
+{
+    if (sStubNextRelaunch) {
+        sStubNextRelaunch = false;
+        return;
+    }
+    real_OSForceFullRelaunch();
+}
+
+WUPS_MUST_REPLACE_FOR_PROCESS(OSForceFullRelaunch, WUPS_LOADER_LIBRARY_COREINIT, OSForceFullRelaunch, WUPS_FP_TARGET_PROCESS_WII_U_MENU);
