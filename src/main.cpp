@@ -64,7 +64,8 @@ static void closeGameFromHBM()
     OSEnableHomeButtonMenu(FALSE);
     //dynload sysapp
     if (OSDynLoad_Acquire("sysapp.rpl", &sysappModule) == OS_DYNLOAD_OK) {
-        if (OSDynLoad_FindExport(sysappModule, OS_DYNLOAD_EXPORT_FUNC, "SYSLaunchMenu", (void**) &dyn_SYSLaunchMenu) == OS_DYNLOAD_OK) {
+        if (OSDynLoad_FindExport(sysappModule, OS_DYNLOAD_EXPORT_FUNC, (gLaunchMenuDirect ? "_SYSLaunchMenuFromHBM" : "SYSLaunchMenu"),
+            (void**) &dyn_SYSLaunchMenu) == OS_DYNLOAD_OK) {
             dyn_SYSLaunchMenu();
         }
         OSDynLoad_Release(sysappModule);

@@ -11,6 +11,9 @@
 
 WUPS_USE_STORAGE("CloseRestartGamePlugin");
 
+extern "C" void _SYSLaunchMenuFromHBM(void);
+extern "C" void _SYSLaunchMenuWithCheckingAccountFromHBM(uint8_t slot);
+
 const uint64_t TITLE_ID_BLACKLIST[] = {0x0005001010045000, // System Updater JPN
                                        0x0005001010045100, // System Updater USA
                                        0x0005001010045200, // System Updater EUR
@@ -60,6 +63,9 @@ void boolItemCallback(ConfigItemBoolean *item, bool newValue)
         } else if (std::string_view(HOLD_TO_RESTART_CONFIG_ID) == item->identifier) {
             gHoldToRestart = newValue;
             WUPSStorageAPI::Store(item->identifier, gHoldToRestart);
+        } else if (std::string_view(LAUNCH_MENU_DIRECT_CONFIG_ID) == item->identifier) {
+            gLaunchMenuDirect = newValue;
+            WUPSStorageAPI::Store(item->identifier, gLaunchMenuDirect);
         }
     }
 }
@@ -115,7 +121,24 @@ WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle ro
                                                            gHoldToRestart,
                                                            &boolItemCallback));
 
-        root.add(std::move(homeMenuSettings));
+        // Category: Advanced
+        auto advancedSettings = WUPSConfigCategory::Create("Advanced");
+
+        advancedSettings.add(WUPSConfigItemBoolean::Create(LAUNCH_MENU_DIRECT_CONFIG_ID,
+                                                           "Prefer \"LaunchMenuFromHBM\" functions",
+                                                           DEFAULT_LAUNCH_MENU_DIRECT_VALUE,
+                                                           gLaunchMenuDirect,
+                                                           &boolItemCallback));
+
+        if (validTitle) {
+            auto settings = WUPSConfigCategory::Create("Settings");
+            settings.add(std::move(homeMenuSettings));
+            settings.add(std::move(advancedSettings));
+            root.add(std::move(settings));
+        } else {
+            root.add(std::move(homeMenuSettings));
+            root.add(std::move(advancedSettings));
+        }
     } catch (const std::exception &e) {
         DEBUG_FUNCTION_LINE_ERR("Exception: %s", e.what());
         return WUPSCONFIG_API_CALLBACK_RESULT_ERROR;
@@ -129,12 +152,19 @@ void ConfigMenuClosedCallback()
     WUPSStorageAPI::SaveStorage();
 
     if (sCloseNow) {
-        SYSLaunchMenu();
+        if (gLaunchMenuDirect) {
+            _SYSLaunchMenuFromHBM();
+        } else {
+            SYSLaunchMenu();
+        }
     } else if (sRestartNow) {
         SYSRelaunchTitle(0, 0);
     } else if (sSwitchUsers) {
-        nn::act::SlotNo slot = nn::act::GetSlotNo();
-        _SYSLaunchMenuWithCheckingAccount(slot);
+        if (gLaunchMenuDirect) {
+            _SYSLaunchMenuWithCheckingAccountFromHBM(nn::act::GetSlotNo());
+        } else {
+            _SYSLaunchMenuWithCheckingAccount(nn::act::GetSlotNo());
+        }
     }
     sCloseNow = false;
     sRestartNow = false;
@@ -149,4 +179,6 @@ void initConfig()
     WUPSStorageAPI::GetOrStoreDefault(PRESS_TO_CLOSE_CONFIG_ID, gPressToClose, DEFAULT_PRESS_TO_CLOSE_VALUE);
 
     WUPSStorageAPI::GetOrStoreDefault(HOLD_TO_RESTART_CONFIG_ID, gHoldToRestart, DEFAULT_HOLD_TO_RESTART_VALUE);
+
+    WUPSStorageAPI::GetOrStoreDefault(LAUNCH_MENU_DIRECT_CONFIG_ID, gLaunchMenuDirect, DEFAULT_LAUNCH_MENU_DIRECT_VALUE);
 }
