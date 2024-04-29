@@ -4,6 +4,7 @@
 #include "config/WUPSConfigItemCheckbox.h"
 #include <wups.h>
 #include <wups/config/WUPSConfigItemBoolean.h>
+#include <wups/config/WUPSConfigItemStub.h>
 #include <sysapp/launch.h>
 #include <nn/act/client_cpp.h>
 #include <coreinit/title.h>
@@ -116,6 +117,8 @@ WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle ro
                                                     false,
                                                     sManageData,
                                                     &checkboxItemChanged));
+        } else {
+            root.add(WUPSConfigItemStub::Create("\uE06B Game options will appear here when in-game"));
         }
         
         // Category: HOME Menu settings
