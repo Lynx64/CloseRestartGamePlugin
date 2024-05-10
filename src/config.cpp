@@ -14,7 +14,7 @@ WUPS_USE_STORAGE("CloseRestartGamePlugin");
 
 extern "C" void _SYSLaunchMenuFromHBM(void);
 extern "C" void _SYSLaunchMenuWithCheckingAccountFromHBM(uint8_t slot);
-extern "C" void SYSLaunchSettings(SysAppSettingsArgs *args);
+extern "C" void _SYSLaunchSettingsDirect(SysAppSettingsArgs *args);
 
 const uint64_t TITLE_ID_BLACKLIST[] = {0x0005001010045000, // System Updater JPN
                                        0x0005001010045100, // System Updater USA
@@ -73,6 +73,9 @@ void boolItemCallback(ConfigItemBoolean *item, bool newValue)
         } else if (std::string_view(LAUNCH_MENU_DIRECT_CONFIG_ID) == item->identifier) {
             gLaunchMenuDirect = newValue;
             WUPSStorageAPI::Store(item->identifier, gLaunchMenuDirect);
+        } else if (std::string_view(LAUNCH_DATA_MANAGE_DIRECT_CONFIG_ID) == item->identifier) {
+            gLaunchDataManageDirect = newValue;
+            WUPSStorageAPI::Store(item->identifier, gLaunchDataManageDirect);
         }
     }
 }
@@ -113,7 +116,7 @@ WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle ro
                                                     &checkboxItemChanged));
 
             root.add(WUPSConfigItemCheckbox::Create("sManageData",
-                                                    "Close and manage save data \uE098",
+                                                    "Close and jump to Data Management",
                                                     false,
                                                     sManageData,
                                                     &checkboxItemChanged));
@@ -143,6 +146,12 @@ WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle ro
                                                            "Prefer \"LaunchMenuFromHBM\" functions",
                                                            DEFAULT_LAUNCH_MENU_DIRECT_VALUE,
                                                            gLaunchMenuDirect,
+                                                           &boolItemCallback));
+
+        advancedSettings.add(WUPSConfigItemBoolean::Create(LAUNCH_DATA_MANAGE_DIRECT_CONFIG_ID,
+                                                           "Bypass needing the GamePad to launch Data Management",
+                                                           DEFAULT_LAUNCH_DATA_MANAGE_DIRECT_VALUE,
+                                                           gLaunchDataManageDirect,
                                                            &boolItemCallback));
 
         if (validTitle) {
@@ -182,8 +191,13 @@ void ConfigMenuClosedCallback()
         }
     } else if (sManageData) {
         sStubNextRelaunch = true;
-        SysAppSettingsArgs settingsArgs {0, 0, 2, 0}; // 2 = Data Management
-        SYSLaunchSettings(&settingsArgs);
+        SysAppSettingsArgs settingsArgs {0, 0, SYS_SETTINGS_JUMP_TO_DATA_MANAGEMENT, 0};
+        if (gLaunchDataManageDirect) {
+            // Use 'Direct' so we're not forced to connect a GamePad
+            _SYSLaunchSettingsDirect(&settingsArgs);
+        } else {
+            _SYSLaunchSettings(&settingsArgs);
+        }
     }
     sCloseNow = false;
     sRestartNow = false;
@@ -201,6 +215,8 @@ void initConfig()
     WUPSStorageAPI::GetOrStoreDefault(HOLD_TO_RESTART_CONFIG_ID, gHoldToRestart, DEFAULT_HOLD_TO_RESTART_VALUE);
 
     WUPSStorageAPI::GetOrStoreDefault(LAUNCH_MENU_DIRECT_CONFIG_ID, gLaunchMenuDirect, DEFAULT_LAUNCH_MENU_DIRECT_VALUE);
+
+    WUPSStorageAPI::GetOrStoreDefault(LAUNCH_DATA_MANAGE_DIRECT_CONFIG_ID, gLaunchDataManageDirect, DEFAULT_LAUNCH_DATA_MANAGE_DIRECT_VALUE);
 }
 
 DECL_FUNCTION(void, OSForceFullRelaunch)
