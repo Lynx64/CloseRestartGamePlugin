@@ -44,8 +44,6 @@ static bool sRestartNow = false;
 static bool sSwitchUsers = false;
 static bool sManageData = false;
 
-static bool sStubNextRelaunch = false;
-
 void checkboxItemChanged(ConfigItemCheckbox *item, bool newValue)
 {
     if (item && item->identifier) {
@@ -190,7 +188,6 @@ void ConfigMenuClosedCallback()
             _SYSLaunchMenuWithCheckingAccount(nn::act::GetSlotNo());
         }
     } else if (sManageData) {
-        sStubNextRelaunch = true;
         SysAppSettingsArgs settingsArgs {0, 0, SYS_SETTINGS_JUMP_TO_DATA_MANAGEMENT, 0};
         if (gLaunchDataManageDirect) {
             // Use 'Direct' so we're not forced to connect a GamePad
@@ -218,14 +215,3 @@ void initConfig()
 
     WUPSStorageAPI::GetOrStoreDefault(LAUNCH_DATA_MANAGE_DIRECT_CONFIG_ID, gLaunchDataManageDirect, DEFAULT_LAUNCH_DATA_MANAGE_DIRECT_VALUE);
 }
-
-DECL_FUNCTION(void, OSForceFullRelaunch)
-{
-    if (sStubNextRelaunch) {
-        sStubNextRelaunch = false;
-        return;
-    }
-    real_OSForceFullRelaunch();
-}
-
-WUPS_MUST_REPLACE_FOR_PROCESS(OSForceFullRelaunch, WUPS_LOADER_LIBRARY_COREINIT, OSForceFullRelaunch, WUPS_FP_TARGET_PROCESS_WII_U_MENU);
