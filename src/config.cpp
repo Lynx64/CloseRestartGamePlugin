@@ -141,7 +141,7 @@ WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle ro
         auto advancedSettings = WUPSConfigCategory::Create("Advanced");
 
         advancedSettings.add(WUPSConfigItemBoolean::Create(LAUNCH_MENU_DIRECT_CONFIG_ID,
-                                                           "Prefer \"LaunchMenuFromHBM\" functions",
+                                                           "Launch Menu directly (no splash)",
                                                            DEFAULT_LAUNCH_MENU_DIRECT_VALUE,
                                                            gLaunchMenuDirect,
                                                            &boolItemCallback));
