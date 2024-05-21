@@ -8,6 +8,7 @@
 #include <sysapp/launch.h>
 #include <nn/act/client_cpp.h>
 #include <coreinit/title.h>
+#include <coreinit/launch.h>
 #include <string_view>
 
 WUPS_USE_STORAGE("CloseRestartGamePlugin");
@@ -43,6 +44,7 @@ static bool sCloseNow = false;
 static bool sRestartNow = false;
 static bool sSwitchUsers = false;
 static bool sManageData = false;
+static bool sShutdownNow = false;
 
 void checkboxItemChanged(ConfigItemCheckbox *item, bool newValue)
 {
@@ -55,6 +57,8 @@ void checkboxItemChanged(ConfigItemCheckbox *item, bool newValue)
             sSwitchUsers = newValue;
         } else if (std::string_view("sManageData") == item->identifier) {
             sManageData = newValue;
+        } else if (std::string_view("sShutdownNow") == item->identifier) {
+            sShutdownNow = newValue;
         }
     }
 }
@@ -122,6 +126,12 @@ WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle ro
             root.add(WUPSConfigItemStub::Create("\uE06B Game options will appear here when in-game"));
         }
         
+        root.add(WUPSConfigItemCheckbox::Create("sShutdownNow",
+                                                "Shutdown \uE040",
+                                                false,
+                                                sShutdownNow,
+                                                &checkboxItemChanged));
+
         // Category: HOME Menu settings
         auto homeMenuSettings = WUPSConfigCategory::Create("\ue073 Menu settings");
 
@@ -195,11 +205,14 @@ void ConfigMenuClosedCallback()
         } else {
             _SYSLaunchSettings(&settingsArgs);
         }
+    } else if (sShutdownNow) {
+        OSShutdown();
     }
     sCloseNow = false;
     sRestartNow = false;
     sSwitchUsers = false;
     sManageData = false;
+    sShutdownNow = false;
 }
 
 void initConfig()
