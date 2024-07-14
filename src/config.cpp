@@ -5,10 +5,13 @@
 #include <wups.h>
 #include <wups/config/WUPSConfigItemBoolean.h>
 #include <wups/config/WUPSConfigItemStub.h>
+#include <notifications/notifications.h>
 #include <sysapp/launch.h>
 #include <nn/act/client_cpp.h>
 #include <coreinit/title.h>
 #include <coreinit/launch.h>
+#include <nn/acp/client.h>
+#include <nn/acp/save.h>
 #include <string_view>
 
 WUPS_USE_STORAGE("CloseRestartGamePlugin");
@@ -16,6 +19,8 @@ WUPS_USE_STORAGE("CloseRestartGamePlugin");
 extern "C" void _SYSLaunchMenuFromHBM(void);
 extern "C" void _SYSLaunchMenuWithCheckingAccountFromHBM(uint8_t slot);
 extern "C" void _SYSLaunchSettingsDirect(SysAppSettingsArgs *args);
+extern "C" ACPResult ACPRemoveSaveDir(uint32_t persistentId, uint32_t unk_2, uint64_t titleId, uint32_t deviceType);
+extern "C" ACPResult ACPRemoveSaveDirWithoutMetaCheck(uint32_t persistentId, uint32_t unk_2, uint64_t titleId, uint32_t deviceType);
 
 const uint64_t TITLE_ID_BLACKLIST[] = {0x0005001010045000, // System Updater JPN
                                        0x0005001010045100, // System Updater USA
@@ -45,6 +50,9 @@ static bool sRestartNow = false;
 static bool sSwitchUsers = false;
 static bool sManageData = false;
 static bool sShutdownNow = false;
+static bool sDeleteSaveData = false;
+
+static bool sDeleteSaveOnAppClose = false;
 
 void checkboxItemChanged(ConfigItemCheckbox *item, bool newValue)
 {
@@ -59,6 +67,8 @@ void checkboxItemChanged(ConfigItemCheckbox *item, bool newValue)
             sManageData = newValue;
         } else if (std::string_view("sShutdownNow") == item->identifier) {
             sShutdownNow = newValue;
+        } else if (std::string_view("sDeleteSaveData") == item->identifier) {
+            sDeleteSaveData = newValue;
         }
     }
 }
@@ -122,6 +132,16 @@ WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle ro
                                                     false,
                                                     sManageData,
                                                     &checkboxItemChanged));
+
+            // only allow deletion for games and demos
+            uint32_t upperTitleId = (uint32_t)(titleId >> 32);
+            if (upperTitleId == 0x00050000 || upperTitleId == 0x00050002) {
+                root.add(WUPSConfigItemCheckbox::Create("sDeleteSaveData",
+                                                        "Delete user save data and close",
+                                                        false,
+                                                        sDeleteSaveData,
+                                                        &checkboxItemChanged));
+            }
         } else {
             root.add(WUPSConfigItemStub::Create("\uE06B Game options will appear here when in-game"));
         }
@@ -207,12 +227,20 @@ void ConfigMenuClosedCallback()
         }
     } else if (sShutdownNow) {
         OSShutdown();
+    } else if (sDeleteSaveData) {
+        sDeleteSaveOnAppClose = true;
+        if (gLaunchMenuDirect) {
+            _SYSLaunchMenuFromHBM();
+        } else {
+            SYSLaunchMenu();
+        }
     }
     sCloseNow = false;
     sRestartNow = false;
     sSwitchUsers = false;
     sManageData = false;
     sShutdownNow = false;
+    sDeleteSaveData = false;
 }
 
 void initConfig()
@@ -227,4 +255,52 @@ void initConfig()
     WUPSStorageAPI::GetOrStoreDefault(LAUNCH_MENU_DIRECT_CONFIG_ID, gLaunchMenuDirect, DEFAULT_LAUNCH_MENU_DIRECT_VALUE);
 
     WUPSStorageAPI::GetOrStoreDefault(LAUNCH_DATA_MANAGE_DIRECT_CONFIG_ID, gLaunchDataManageDirect, DEFAULT_LAUNCH_DATA_MANAGE_DIRECT_VALUE);
+}
+
+void deleteUserSaveData()
+{
+    uint64_t titleId = OSGetTitleID();
+
+    // only allow deletion for games and demos
+    uint32_t upperTitleId = (uint32_t)(titleId >> 32);
+    if (upperTitleId != 0x00050000 && upperTitleId != 0x00050002) {
+        return;
+    }
+
+    nn::act::Initialize();
+    ACPInitialize();
+
+    BOOL usingUSB = TRUE;
+    auto usbResult = ACPIsExternalStorageRequired(&usingUSB);
+    if (usbResult != ACP_RESULT_SUCCESS) {
+        DEBUG_FUNCTION_LINE_ERR("ACPIsExternalStorageRequired returned %d", usbResult);
+        char text[64];
+        snprintf(text, sizeof(text), "ACPIsExternalStorageRequired returned %d", usbResult);
+        NotificationModule_AddErrorNotification(text);
+    } else {
+        auto deleteResult = ACPRemoveSaveDir(0x80000000 | nn::act::GetPersistentId(), 1, titleId, usingUSB ? 4 : 3);
+        if (deleteResult != ACP_RESULT_SUCCESS) {
+            DEBUG_FUNCTION_LINE_WARN("ACPRemoveSaveDir returned %d", deleteResult);
+            deleteResult = ACPRemoveSaveDirWithoutMetaCheck(0x80000000 | nn::act::GetPersistentId(), 1, titleId, usingUSB ? 4 : 3);
+            DEBUG_FUNCTION_LINE_WARN("ACPRemoveSaveDirWithoutMetaCheck returned %d", deleteResult);
+            if (deleteResult == ACP_RESULT_DIR_NOT_FOUND) {
+                NotificationModule_AddErrorNotification("User has no save data to delete");
+            } else if (deleteResult != ACP_RESULT_SUCCESS) {
+                char text[64];
+                snprintf(text, sizeof(text), "ACPRemoveSaveDir returned %d", deleteResult);
+                NotificationModule_AddErrorNotification(text);
+            }
+        }
+    }
+    
+    ACPFinalize();
+    nn::act::Finalize();
+}
+
+ON_APPLICATION_ENDS()
+{
+    if (sDeleteSaveOnAppClose) {
+        sDeleteSaveOnAppClose = false;
+        deleteUserSaveData();
+    }
 }

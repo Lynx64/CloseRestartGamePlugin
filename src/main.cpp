@@ -3,6 +3,7 @@
 #include "globals.hpp"
 #include "logger.h"
 #include <wups.h>
+#include <notifications/notifications.h>
 #include <vpad/input.h>
 #include <padscore/kpad.h>
 #include <sysapp/launch.h>
@@ -23,9 +24,25 @@ WUPS_USE_WUT_DEVOPTAB();
 INITIALIZE_PLUGIN()
 {
     initConfig();
+    NotificationModuleStatus notifStatus = NotificationModule_InitLibrary();
+    if (notifStatus == NOTIFICATION_MODULE_RESULT_SUCCESS) {
+        NotificationModule_SetDefaultValue(NOTIFICATION_MODULE_NOTIFICATION_TYPE_ERROR,
+                                           NOTIFICATION_MODULE_DEFAULT_OPTION_DURATION_BEFORE_FADE_OUT,
+                                           60.0f);
+        NotificationModule_SetDefaultValue(NOTIFICATION_MODULE_NOTIFICATION_TYPE_ERROR,
+                                           NOTIFICATION_MODULE_DEFAULT_OPTION_KEEP_UNTIL_SHOWN,
+                                           true);
+    } else {
+        DEBUG_FUNCTION_LINE_ERR("NotificationModule_InitLibrary returned %s (%d)",
+                                NotificationModule_GetStatusStr(notifStatus),
+                                notifStatus);
+    }
 }
 
-extern "C" uint32_t VPADGetButtonProcMode(VPADChan chan);
+DEINITIALIZE_PLUGIN()
+{
+    NotificationModule_DeInitLibrary();
+}
 
 #define HBM_HOLD_TO_RESTART_FRAMES 45
 
