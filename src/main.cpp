@@ -28,8 +28,14 @@ INITIALIZE_PLUGIN()
     if (notifStatus == NOTIFICATION_MODULE_RESULT_SUCCESS) {
         NotificationModule_SetDefaultValue(NOTIFICATION_MODULE_NOTIFICATION_TYPE_ERROR,
                                            NOTIFICATION_MODULE_DEFAULT_OPTION_DURATION_BEFORE_FADE_OUT,
-                                           60.0f);
+                                           30.0f);
         NotificationModule_SetDefaultValue(NOTIFICATION_MODULE_NOTIFICATION_TYPE_ERROR,
+                                           NOTIFICATION_MODULE_DEFAULT_OPTION_KEEP_UNTIL_SHOWN,
+                                           true);
+        NotificationModule_SetDefaultValue(NOTIFICATION_MODULE_NOTIFICATION_TYPE_INFO,
+                                           NOTIFICATION_MODULE_DEFAULT_OPTION_DURATION_BEFORE_FADE_OUT,
+                                           30.0f);
+        NotificationModule_SetDefaultValue(NOTIFICATION_MODULE_NOTIFICATION_TYPE_INFO,
                                            NOTIFICATION_MODULE_DEFAULT_OPTION_KEEP_UNTIL_SHOWN,
                                            true);
     } else {
