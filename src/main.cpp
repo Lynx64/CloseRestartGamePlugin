@@ -20,29 +20,35 @@ WUPS_PLUGIN_LICENSE("GPLv3");
 
 WUPS_USE_WUT_DEVOPTAB();
 
+static void initNotifications()
+{
+    NotificationModuleStatus notifStatus = NotificationModule_InitLibrary();
+    if (notifStatus != NOTIFICATION_MODULE_RESULT_SUCCESS) {
+        DEBUG_FUNCTION_LINE_ERR("NotificationModule_InitLibrary returned %s (%d)",
+                                NotificationModule_GetStatusStr(notifStatus),
+                                notifStatus);
+        return;
+    }
+
+    NotificationModule_SetDefaultValue(NOTIFICATION_MODULE_NOTIFICATION_TYPE_ERROR,
+                                       NOTIFICATION_MODULE_DEFAULT_OPTION_DURATION_BEFORE_FADE_OUT,
+                                       30.0f);
+    NotificationModule_SetDefaultValue(NOTIFICATION_MODULE_NOTIFICATION_TYPE_ERROR,
+                                       NOTIFICATION_MODULE_DEFAULT_OPTION_KEEP_UNTIL_SHOWN,
+                                       true);
+    NotificationModule_SetDefaultValue(NOTIFICATION_MODULE_NOTIFICATION_TYPE_INFO,
+                                       NOTIFICATION_MODULE_DEFAULT_OPTION_DURATION_BEFORE_FADE_OUT,
+                                       30.0f);
+    NotificationModule_SetDefaultValue(NOTIFICATION_MODULE_NOTIFICATION_TYPE_INFO,
+                                       NOTIFICATION_MODULE_DEFAULT_OPTION_KEEP_UNTIL_SHOWN,
+                                       true);
+}
+
 // Gets called ONCE when the plugin was loaded
 INITIALIZE_PLUGIN()
 {
     initConfig();
-    NotificationModuleStatus notifStatus = NotificationModule_InitLibrary();
-    if (notifStatus == NOTIFICATION_MODULE_RESULT_SUCCESS) {
-        NotificationModule_SetDefaultValue(NOTIFICATION_MODULE_NOTIFICATION_TYPE_ERROR,
-                                           NOTIFICATION_MODULE_DEFAULT_OPTION_DURATION_BEFORE_FADE_OUT,
-                                           30.0f);
-        NotificationModule_SetDefaultValue(NOTIFICATION_MODULE_NOTIFICATION_TYPE_ERROR,
-                                           NOTIFICATION_MODULE_DEFAULT_OPTION_KEEP_UNTIL_SHOWN,
-                                           true);
-        NotificationModule_SetDefaultValue(NOTIFICATION_MODULE_NOTIFICATION_TYPE_INFO,
-                                           NOTIFICATION_MODULE_DEFAULT_OPTION_DURATION_BEFORE_FADE_OUT,
-                                           30.0f);
-        NotificationModule_SetDefaultValue(NOTIFICATION_MODULE_NOTIFICATION_TYPE_INFO,
-                                           NOTIFICATION_MODULE_DEFAULT_OPTION_KEEP_UNTIL_SHOWN,
-                                           true);
-    } else {
-        DEBUG_FUNCTION_LINE_ERR("NotificationModule_InitLibrary returned %s (%d)",
-                                NotificationModule_GetStatusStr(notifStatus),
-                                notifStatus);
-    }
+    initNotifications();
 }
 
 DEINITIALIZE_PLUGIN()
