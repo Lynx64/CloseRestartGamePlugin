@@ -196,17 +196,22 @@ WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle ro
     return WUPSCONFIG_API_CALLBACK_RESULT_SUCCESS;
 }
 
+static inline void launchMenu()
+{
+    if (gLaunchMenuDirect) {
+        _SYSLaunchMenuFromHBM();
+    } else {
+        SYSLaunchMenu();
+    }
+}
+
 void ConfigMenuClosedCallback()
 {
     // Save all changes
     WUPSStorageAPI::SaveStorage();
 
     if (sCloseNow) {
-        if (gLaunchMenuDirect) {
-            _SYSLaunchMenuFromHBM();
-        } else {
-            SYSLaunchMenu();
-        }
+        launchMenu();
     } else if (sRestartNow) {
         SYSRelaunchTitle(0, 0);
     } else if (sSwitchUsers) {
@@ -227,11 +232,7 @@ void ConfigMenuClosedCallback()
         OSShutdown();
     } else if (sDeleteSaveData) {
         sDeleteSaveOnAppClose = true;
-        if (gLaunchMenuDirect) {
-            _SYSLaunchMenuFromHBM();
-        } else {
-            SYSLaunchMenu();
-        }
+        launchMenu();
     }
     sCloseNow = false;
     sRestartNow = false;
