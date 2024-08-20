@@ -51,6 +51,7 @@ static bool sShutdownNow = false;
 static bool sDeleteSaveData = false;
 
 static bool sDeleteSaveOnAppClose = false;
+static bool sShowDeleteSaveDataOptions = false;
 
 void checkboxItemChanged(ConfigItemCheckbox *item, bool newValue)
 {
@@ -86,6 +87,8 @@ void boolItemCallback(ConfigItemBoolean *item, bool newValue)
         } else if (std::string_view(LAUNCH_DATA_MANAGE_DIRECT_CONFIG_ID) == item->identifier) {
             gLaunchDataManageDirect = newValue;
             WUPSStorageAPI::Store(item->identifier, gLaunchDataManageDirect);
+        } else if (std::string_view("sShowDeleteSaveDataOptions") == item->identifier) {
+            sShowDeleteSaveDataOptions = newValue;
         }
     }
 }
@@ -133,7 +136,7 @@ WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle ro
 
             // only allow deletion for games and demos
             uint32_t upperTitleId = (uint32_t) (titleId >> 32);
-            if (upperTitleId == 0x00050000 || upperTitleId == 0x00050002) {
+            if (sShowDeleteSaveDataOptions && (upperTitleId == 0x00050000 || upperTitleId == 0x00050002)) {
                 root.add(WUPSConfigItemCheckbox::Create("sDeleteSaveData",
                                                         "Delete user save data and close",
                                                         false,
@@ -167,6 +170,12 @@ WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle ro
 
         // Category: Advanced
         auto advancedSettings = WUPSConfigCategory::Create("Advanced");
+
+        advancedSettings.add(WUPSConfigItemBoolean::Create("sShowDeleteSaveDataOptions",
+                                                           "Temporarily show delete save data options",
+                                                           false,
+                                                           sShowDeleteSaveDataOptions,
+                                                           &boolItemCallback));
 
         advancedSettings.add(WUPSConfigItemBoolean::Create(LAUNCH_MENU_DIRECT_CONFIG_ID,
                                                            "Launch Menu directly (no splash)",
