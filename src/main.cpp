@@ -108,7 +108,7 @@ DECL_FUNCTION(int32_t, VPADRead, VPADChan chan, VPADStatus *buffer, uint32_t buf
 
     if (result > 0 && realError == VPAD_READ_SUCCESS) {
         bool foundX = false;
-        uint32_t end = (VPADGetButtonProcMode(chan) == 1) ? bufferSize : 1;
+        uint32_t end = VPADGetButtonProcMode(chan) == 1 ? result : 1;
         for (uint32_t i = 0; i < end; i++) {
             if (buffer[i].hold & VPAD_BUTTON_X) {
                 foundX = true;
