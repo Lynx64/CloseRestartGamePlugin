@@ -23,8 +23,8 @@ Open the plugin config menu by pressing L, DPAD Down and Minus on the GamePad, P
 
 ## Building
 For building you need:
-- [wups](https://github.com/wiiu-env/WiiUPluginSystem)
 - [wut](https://github.com/devkitPro/wut)
+- [wups](https://github.com/wiiu-env/WiiUPluginSystem)
 - [libnotifications](https://github.com/wiiu-env/libnotifications)
 
 then run `make`
